@@ -13,27 +13,24 @@ def check_logic():
             if df.empty or len(df) < 21:
                 continue
 
-            # 2. 【ここが急所】MultiIndexを即座に解消
-            # これにより df['Volume'] が「特定の銘柄の列」ではなく「ただの列」になります
-            if isinstance(df.columns, pd.MultiIndex):
-                df.columns = df.columns.get_level_values(0)
-
-            # 3. 確実に「一列のデータ(Series)」としてから「最後の値」を抽出
-            # .squeeze() を使うことで、余計な次元を完全に削ぎ落とします
-            vol_series = df['Volume'].squeeze()
+            # 2. 【ここが解決の鍵】
+            # .flatten() よりも強力に、Volume列を「純粋な数値のリスト」に変換します
+            # 構造がどうあれ、valuesで中身を取り出し、flattenで平坦化し、listに変換
+            vol_list = df['Volume'].values.flatten().tolist()
             
-            # Seriesの末尾から数値を取得
-            today_vol = float(vol_series.iloc[-1])
-            avg_vol = float(vol_series.iloc[-21:-1].mean())
+            # 3. Python標準のリスト操作で計算（ここなら絶対にAmbiguousエラーは出ません）
+            today_vol = float(vol_list[-1])
+            past_vols = vol_list[-21:-1]
+            avg_vol = sum(past_vols) / len(past_vols)
 
             print(f"📊 {ticker}: 本日={today_vol:,.0f}, 平均={avg_vol:,.0f}")
 
-            # 4. 判定（ここでもう ValueError は出ません）
+            # 4. 数値同士の比較なので確実に通ります
             if avg_vol > 0 and today_vol > avg_vol * 2.0:
                 print(f"🚀 {ticker}: 出来高スパイク検知！")
 
         except Exception as e:
-            print(f"⚠️ {ticker} エラー: {e}")
+            print(f"⚠️ {ticker} 処理エラー: {e}")
 
 if __name__ == "__main__":
     check_logic()
