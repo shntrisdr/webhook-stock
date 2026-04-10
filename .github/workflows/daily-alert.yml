@@ -1,0 +1,22 @@
+name: Stock-Alert-MVP
+
+on:
+  schedule:
+    - cron: '15 06 * * 1-5' # 平日15:15（UTC 6:15）に実行
+  workflow_dispatch: # 手動実行ボタンも追加
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Install dependencies
+        run: pip install yfinance requests pandas
+      - name: Run Script
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: python main.py
