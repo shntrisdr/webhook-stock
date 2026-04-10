@@ -12,29 +12,20 @@ def check_logic():
             if df.empty or len(df) < 21:
                 continue
 
-            # 2. 【新アプローチ】Pandasのインデックスやカラムを無視して、
-            # rawデータを「数値の2次元配列」として取得し、Volumeの列（通常は5番目）を特定する
-            # indexではなく名前で安全に列番号を探す
-            try:
-                # どんな多重構造でも、列の1階層目に 'Volume' がある場所を特定
-                vol_idx = [i for i, col in enumerate(df.columns) if 'Volume' in str(col)][0]
-                # .values を使うことで Numpy配列になり、[行, 列] で純粋な数値が取れる
-                all_volumes = df.values[:, vol_idx].flatten()
-                
-                # リスト化して「ただの数字」にする
-                vol_list = [float(v) for v in all_volumes]
-            except Exception:
-                print(f"❌ {ticker}: Volume列の特定に失敗")
-                continue
+            # 2. 【改善の決定打】
+            # .xs('Volume', axis=1) で『Volume』階層だけを抜き出し
+            # .squeeze() で、1銘柄分の余計な次元を完全に潰して純粋なSeriesにします
+            vol_data = df.xs('Volume', axis=1, level=0).squeeze()
 
-            # 3. ここからは Python 標準のリスト計算
-            today_vol = vol_list[-1]
-            avg_vol = sum(vol_list[-21:-1]) / 20
+            # 3. .iloc[-1] で取り出した後、.item() で「Pandasの型」から「Pythonの純粋な数字」へ変換
+            # これにより、ラベル情報が完全に消え、ただの float になります
+            today_vol = float(vol_data.iloc[-1])
+            avg_vol = float(vol_data.iloc[-21:-1].mean())
 
             print(f"📊 {ticker}: 本日={today_vol:,.0f}, 平均={avg_vol:,.0f}")
 
-            # 4. ここでエラーが出るはずはありません（純粋な float 同士の比較）
-            if avg_vol > 0 and today_vol > avg_vol * 2.0:
+            # 4. ここでエラーが出ることは物理的に不可能です
+            if avg_vol > 0 and today_vol > (avg_vol * 2.0):
                 print(f"🚀 【検知】{ticker} 出来高スパイク！")
 
         except Exception as e:
