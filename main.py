@@ -12,9 +12,9 @@ def check_logic():
         data = yf.download(ticker, period="1mo", interval="1d")
         if len(data) < 21: continue
 
-        # 出来高スパイク判定（当日 > 20日平均 * 2.0）
-        avg_vol = data['Volume'].iloc[-21:-1].mean()
-        today_vol = data['Volume'].iloc[-1]
+       # 出来高スパイク判定（数値として確実に取り出す）
+        avg_vol = float(data['Volume'].iloc[-21:-1].mean())
+        today_vol = float(data['Volume'].iloc[-1])
         
         if today_vol > avg_vol * 2.0:
             alerts.append(f"🚀 【出来高急増】{ticker}: 通常の{today_vol/avg_vol:.1f}倍")
